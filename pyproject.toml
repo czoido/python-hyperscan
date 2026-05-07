@@ -38,22 +38,11 @@ Repository = "https://github.com/darvid/python-hyperscan"
 Documentation = "https://python-hyperscan.readthedocs.io/en/latest/"
 
 [build-system]
-requires = ["scikit-build-core", "cmake>=3.31"]
-build-backend = "scikit_build_core.build"
+requires = ["conan-py-build"]
+build-backend = "conan_py_build.build"
 
-[tool.scikit-build]
-build-dir = "build/{wheel_tag}"
-sdist.cmake = false
-build.targets = ["hs_python_extension"]
-build.verbose = true
-logging.level = "DEBUG"
-wheel.expand-macos-universal-tags = true
-wheel.packages = ["src/hyperscan", "hyperscan._hyperscan"]
-install.components = ["hyperscan"]
-
-[tool.scikit-build.cmake]
-build-type = "MinSizeRel"
-version = ">=3.31"
+[tool.conan-py-build.wheel]
+packages = ["src/hyperscan"]
 
 [tool.cibuildwheel]
 build-frontend = "build[uv]"

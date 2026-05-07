@@ -171,3 +171,6 @@ cython_debug/
 #.idea/
 
 github_ci_*
+
+# Conan cache (placed in workspace by CI for actions/cache)
+.conan2/
