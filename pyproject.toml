@@ -64,10 +64,9 @@ enable = ["pypy", "pypy-eol", "cpython-freethreading"]
 # CONAN_HOME/remotes.json across CI runs (cached by actions/cache), so
 # subsequent runs with cache hits reuse the locally-built binaries.
 before-build = [
-  "uv pip install conan",
-  "conan profile detect --exist-ok",
-  "conan remote update conancenter --recipes-only True",
-  "conan install {project} --build=missing -pr:h default -pr:h {project}/conan/profile -pr:b default -pr:b {project}/conan/profile",
+  "uvx conan profile detect --exist-ok",
+  "uvx conan remote update conancenter --recipes-only True",
+  "uvx conan install {project} --build=missing -pr:h default -pr:h {project}/conan/profile -pr:b default -pr:b {project}/conan/profile",
 ]
 
 [tool.cibuildwheel.linux]
