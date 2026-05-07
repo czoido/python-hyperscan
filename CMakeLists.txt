@@ -12,13 +12,16 @@ endif()
 find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
 
 # vectorscan upstream doesn't support MSVC; on Windows the conanfile pulls
-# Intel's hyperscan instead.
+# Intel's hyperscan instead. Both recipes expose hs and chimera as separate
+# components; the chimera component is what brings ch.h. The vectorscan
+# recipe renames its components to bare CMake target names (hs, chimera),
+# while hyperscan keeps the default <pkg>::<comp> namespacing.
 if(WIN32)
     find_package(hyperscan REQUIRED)
-    set(HS_CONAN_TARGET hyperscan::hyperscan)
+    set(HS_CONAN_TARGETS hyperscan::hs hyperscan::chimera)
 else()
     find_package(vectorscan REQUIRED)
-    set(HS_CONAN_TARGET vectorscan::vectorscan)
+    set(HS_CONAN_TARGETS hs chimera)
 endif()
 
 set(HS_EXT_NAME _hs_ext)
@@ -43,7 +46,24 @@ else()
   target_link_options(${HS_EXT_NAME} PRIVATE -O0)
 endif()
 
-target_link_libraries(${HS_EXT_NAME} PRIVATE Python::Module ${HS_CONAN_TARGET})
+target_link_libraries(${HS_EXT_NAME} PRIVATE Python::Module ${HS_CONAN_TARGETS})
+
+# The CCI hyperscan recipe installs headers to include/hs/ but doesn't
+# declare per-component includedirs (vectorscan's recipe does:
+# `cpp_info.components["hs"].includedirs = ["include/hs"]`), so component
+# targets default to include/ and `#include <hs.h>` / `#include <ch.h>` in
+# extension.c don't resolve. Pending a fix to the hyperscan recipe upstream
+# in conan-center-index, append /hs/ explicitly when present.
+foreach(_hs_comp ${HS_CONAN_TARGETS})
+    get_target_property(_inc ${_hs_comp} INTERFACE_INCLUDE_DIRECTORIES)
+    if(_inc)
+        foreach(_d ${_inc})
+            if(IS_DIRECTORY "${_d}/hs")
+                target_include_directories(${HS_EXT_NAME} PRIVATE "${_d}/hs")
+            endif()
+        endforeach()
+    endif()
+endforeach()
 
 if("$ENV{AUDITWHEEL_PLAT}" MATCHES "musllinux")
   target_link_options(${HS_EXT_NAME} PRIVATE

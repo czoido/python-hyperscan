@@ -1,2 +1,9 @@
+{% set archflags = os.getenv("ARCHFLAGS", "") %}
+
 [settings]
 compiler.cppstd=17
+{% if "x86_64" in archflags %}
+arch=x86_64
+{% elif "arm64" in archflags %}
+arch=armv8
+{% endif %}

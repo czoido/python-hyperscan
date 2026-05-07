@@ -57,6 +57,17 @@ test-requires = ["pytest>=7.0", "pytest-mock"]
 test-skip = "*-*linux_{ppc64le,s390x} *-macosx_arm64"
 enable = ["pypy", "pypy-eol", "cpython-freethreading"]
 
+# Pre-warm the Conan cache before conan-py-build runs its own --build=missing.
+# We force b2 from sources on every platform: the b2 prebuilt that Conan
+# Center ships requires GLIBC 2.34 and the manylinux2014 image has 2.17, so
+# the prebuilt fails to execute when boost tries to use it. Other deps use
+# prebuilts when compatible. The /project/.conan2 dir is persisted across
+# CI runs by actions/cache, so once b2 is built once it's cached.
+before-build = [
+  "pip install conan",
+  "conan install {project} --build=missing --build=b2/* -pr:h default -pr:h {project}/conan/profile -pr:b default -pr:b {project}/conan/profile",
+]
+
 [tool.cibuildwheel.linux]
 before-all = ["yum -y update", """yum -y install \
   autoconf \
@@ -68,20 +79,6 @@ before-all = ["yum -y update", """yum -y install \
   ragel \
   zlib-devel \
   """]
-# Build the full Conan dependency graph from sources inside the container.
-# This avoids GLIBC / libcxx mismatches between CCI prebuilts and the
-# manylinux / musllinux images (boost's b2 tool prebuilt requires GLIBC 2.34;
-# manylinux2014 has 2.17). Once this step finishes, the actual wheel build
-# (conan-py-build with --build=missing) finds every dependency cached and
-# only compiles our extension. /project/.conan2 is persisted across CI runs
-# by actions/cache so this is paid once per (platform, conanfile.py) pair.
-before-build = """
-  pip install conan && \
-  conan profile detect --exist-ok && \
-  conan install /project --build=* \
-    -pr:h default -pr:h /project/conan/profile \
-    -pr:b default -pr:b /project/conan/profile
-"""
 repair-wheel-command = "auditwheel repair -w {dest_dir} {wheel}"
 environment-pass = ["CI"]
 manylinux-x86_64-image = "manylinux2014"
