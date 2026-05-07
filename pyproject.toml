@@ -41,6 +41,11 @@ Documentation = "https://python-hyperscan.readthedocs.io/en/latest/"
 requires = ["conan-py-build"]
 build-backend = "conan_py_build.build"
 
+[tool.conan-py-build]
+# Bump cppstd from the auto-detected gnu14 default of older GCCs to gnu17
+# (vectorscan requires C++17). Applies to host + build profiles.
+extra-profile-all = "conan/profile"
+
 [tool.conan-py-build.wheel]
 packages = ["src/hyperscan"]
 
