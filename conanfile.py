@@ -10,13 +10,19 @@ class HyperscanPyConan(ConanFile):
 
     default_options = {
         "vectorscan/*:with_chimera": True,
+        "hyperscan/*:build_chimera": True,
     }
 
     def layout(self):
         cmake_layout(self)
 
     def requirements(self):
-        self.requires("vectorscan/5.4.11")
+        if self.settings.os == "Windows":
+            # vectorscan upstream doesn't support MSVC; fall back to Intel
+            # hyperscan, mirroring what the original CMakeLists.txt did.
+            self.requires("hyperscan/5.4.2")
+        else:
+            self.requires("vectorscan/5.4.11")
 
     def build_requirements(self):
         self.tool_requires("ragel/6.10")

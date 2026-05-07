@@ -10,7 +10,16 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
-find_package(vectorscan REQUIRED)
+
+# vectorscan upstream doesn't support MSVC; on Windows the conanfile pulls
+# Intel's hyperscan instead.
+if(WIN32)
+    find_package(hyperscan REQUIRED)
+    set(HS_CONAN_TARGET hyperscan::hyperscan)
+else()
+    find_package(vectorscan REQUIRED)
+    set(HS_CONAN_TARGET vectorscan::vectorscan)
+endif()
 
 set(HS_EXT_NAME _hs_ext)
 python_add_library(${HS_EXT_NAME} MODULE src/hyperscan/extension.c WITH_SOABI)
@@ -34,7 +43,7 @@ else()
   target_link_options(${HS_EXT_NAME} PRIVATE -O0)
 endif()
 
-target_link_libraries(${HS_EXT_NAME} PRIVATE Python::Module vectorscan::vectorscan)
+target_link_libraries(${HS_EXT_NAME} PRIVATE Python::Module ${HS_CONAN_TARGET})
 
 if("$ENV{AUDITWHEEL_PLAT}" MATCHES "musllinux")
   target_link_options(${HS_EXT_NAME} PRIVATE
