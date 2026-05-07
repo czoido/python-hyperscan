@@ -11,6 +11,11 @@ class HyperscanPyConan(ConanFile):
     default_options = {
         "vectorscan/*:with_chimera": True,
         "hyperscan/*:build_chimera": True,
+        # hyperscan/vectorscan only use boost.headers (graph, intrusive, etc.).
+        # Skip components whose build deps don't always cross-compile cleanly
+        # (locale needs iconv, stacktrace_backtrace needs libbacktrace native).
+        "boost/*:without_locale": True,
+        "boost/*:without_stacktrace_backtrace": True,
     }
 
     def layout(self):
