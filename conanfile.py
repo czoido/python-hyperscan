@@ -16,6 +16,15 @@ class HyperscanPyConan(ConanFile):
     def layout(self):
         cmake_layout(self)
 
+    def configure(self):
+        if self.settings.os == "Windows":
+            # On Windows, hyperscan's chimera is built referencing PCRE via
+            # __declspec(dllimport) (no PCRE_STATIC defined upstream), so
+            # chimera.lib expects pcre.dll's import library at link time.
+            # Force pcre as shared to match. delvewheel bundles pcre.dll
+            # into the wheel automatically.
+            self.options["pcre/*"].shared = True
+
     def requirements(self):
         if self.settings.os == "Windows":
             # vectorscan upstream doesn't support MSVC; fall back to Intel
