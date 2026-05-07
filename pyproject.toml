@@ -65,6 +65,7 @@ enable = ["pypy", "pypy-eol", "cpython-freethreading"]
 # CI runs by actions/cache, so once b2 is built once it's cached.
 before-build = [
   "pip install conan",
+  "conan profile detect --exist-ok",
   "conan install {project} --build=missing --build=b2/* -pr:h default -pr:h {project}/conan/profile -pr:b default -pr:b {project}/conan/profile",
 ]
 
