@@ -18,9 +18,11 @@ find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
 # while hyperscan keeps the default <pkg>::<comp> namespacing.
 if(WIN32)
     find_package(hyperscan REQUIRED)
+    set(HS_PKG hyperscan)
     set(HS_CONAN_TARGETS hyperscan::hs hyperscan::chimera)
 else()
     find_package(vectorscan REQUIRED)
+    set(HS_PKG vectorscan)
     set(HS_CONAN_TARGETS hs chimera)
 endif()
 
@@ -53,15 +55,26 @@ target_link_libraries(${HS_EXT_NAME} PRIVATE Python::Module ${HS_CONAN_TARGETS})
 # `cpp_info.components["hs"].includedirs = ["include/hs"]`), so component
 # targets default to include/ and `#include <hs.h>` / `#include <ch.h>` in
 # extension.c don't resolve. Pending a fix to the hyperscan recipe upstream
-# in conan-center-index, append /hs/ explicitly when present.
-foreach(_hs_comp ${HS_CONAN_TARGETS})
-    get_target_property(_inc ${_hs_comp} INTERFACE_INCLUDE_DIRECTORIES)
-    if(_inc)
-        foreach(_d ${_inc})
-            if(IS_DIRECTORY "${_d}/hs")
-                target_include_directories(${HS_EXT_NAME} PRIVATE "${_d}/hs")
-            endif()
-        endforeach()
+# in conan-center-index, append /hs/ explicitly when present. Walk every
+# include-dir source CMakeDeps exposes (target properties + the package
+# variables) since component INTERFACE_INCLUDE_DIRECTORIES can be empty
+# when the recipe relies on cpp_info defaults.
+set(_hs_include_candidates)
+foreach(_t ${HS_CONAN_TARGETS})
+    if(TARGET ${_t})
+        get_target_property(_inc ${_t} INTERFACE_INCLUDE_DIRECTORIES)
+        if(_inc)
+            list(APPEND _hs_include_candidates ${_inc})
+        endif()
+    endif()
+endforeach()
+list(APPEND _hs_include_candidates
+    ${${HS_PKG}_INCLUDE_DIRS}
+    ${${HS_PKG}_INCLUDE_DIRS_RELEASE}
+    ${${HS_PKG}_INCLUDE_DIRS_DEBUG})
+foreach(_d ${_hs_include_candidates})
+    if(IS_DIRECTORY "${_d}/hs")
+        target_include_directories(${HS_EXT_NAME} PRIVATE "${_d}/hs")
     endif()
 endforeach()
 
