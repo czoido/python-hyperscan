@@ -57,16 +57,17 @@ test-requires = ["pytest>=7.0", "pytest-mock"]
 test-skip = "*-*linux_{ppc64le,s390x} *-macosx_arm64"
 enable = ["pypy", "pypy-eol", "cpython-freethreading"]
 
-# Pre-warm the Conan cache before conan-py-build runs its own --build=missing.
-# We force b2 from sources on every platform: the b2 prebuilt that Conan
-# Center ships requires GLIBC 2.34 and the manylinux2014 image has 2.17, so
-# the prebuilt fails to execute when boost tries to use it. Other deps use
-# prebuilts when compatible. The /project/.conan2 dir is persisted across
-# CI runs by actions/cache, so once b2 is built once it's cached.
+# Configure Conan Center as recipes-only: recipes can still be downloaded
+# (so source() can fetch upstream tarballs), but binary packages cannot.
+# `conan install --build=missing` then has no remote binary to choose from
+# and falls back to building from sources locally. Setting persists in
+# CONAN_HOME/remotes.json across CI runs (cached by actions/cache), so
+# subsequent runs with cache hits reuse the locally-built binaries.
 before-build = [
   "pip install conan",
   "conan profile detect --exist-ok",
-  "conan install {project} --build=missing --build=b2/* -pr:h default -pr:h {project}/conan/profile -pr:b default -pr:b {project}/conan/profile",
+  "conan remote update conancenter --recipes-only True",
+  "conan install {project} --build=missing -pr:h default -pr:h {project}/conan/profile -pr:b default -pr:b {project}/conan/profile",
 ]
 
 [tool.cibuildwheel.linux]
