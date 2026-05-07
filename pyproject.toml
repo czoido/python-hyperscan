@@ -68,19 +68,19 @@ before-all = ["yum -y update", """yum -y install \
   ragel \
   zlib-devel \
   """]
-# Pre-resolve Conan recipes from CCI inside the container, then disable the
-# remote. After this, the wheel build runs Conan with --build=missing but no
-# remote is available for binaries, so everything is built from sources. This
-# avoids GLIBC / libcxx mismatches between CCI prebuilts and the manylinux /
-# musllinux images. Recipes (and the resulting source-built binaries) live in
-# /project/.conan2 and are persisted across CI runs by actions/cache.
+# Build the full Conan dependency graph from sources inside the container.
+# This avoids GLIBC / libcxx mismatches between CCI prebuilts and the
+# manylinux / musllinux images (boost's b2 tool prebuilt requires GLIBC 2.34;
+# manylinux2014 has 2.17). Once this step finishes, the actual wheel build
+# (conan-py-build with --build=missing) finds every dependency cached and
+# only compiles our extension. /project/.conan2 is persisted across CI runs
+# by actions/cache so this is paid once per (platform, conanfile.py) pair.
 before-build = """
   pip install conan && \
   conan profile detect --exist-ok && \
-  conan graph info /project \
+  conan install /project --build=* \
     -pr:h default -pr:h /project/conan/profile \
-    -pr:b default -pr:b /project/conan/profile && \
-  conan remote disable conancenter
+    -pr:b default -pr:b /project/conan/profile
 """
 repair-wheel-command = "auditwheel repair -w {dest_dir} {wheel}"
 environment-pass = ["CI"]
