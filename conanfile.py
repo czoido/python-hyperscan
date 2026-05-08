@@ -13,22 +13,13 @@ class HyperscanPyConan(ConanFile):
         "hyperscan/*:build_chimera": True,
         # hyperscan/vectorscan only use boost.headers (graph, intrusive, etc.).
         # Skip components whose build deps don't always cross-compile cleanly
-        # (locale needs iconv, stacktrace_backtrace needs libbacktrace native).
+        # (locale needs iconv, stacktrace needs libbacktrace native).
         "boost/*:without_locale": True,
-        "boost/*:without_stacktrace_backtrace": True,
+        "boost/*:without_stacktrace": True,
     }
 
     def layout(self):
         cmake_layout(self)
-
-    def configure(self):
-        if self.settings.os == "Windows":
-            # On Windows, hyperscan's chimera is built referencing PCRE via
-            # __declspec(dllimport) (no PCRE_STATIC defined upstream), so
-            # chimera.lib expects pcre.dll's import library at link time.
-            # Force pcre as shared to match. delvewheel bundles pcre.dll
-            # into the wheel automatically.
-            self.options["pcre/*"].shared = True
 
     def requirements(self):
         if self.settings.os == "Windows":
